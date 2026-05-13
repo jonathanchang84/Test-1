@@ -1,6 +1,5 @@
 import streamlit as st
 
-# 1. Page Configuration (Must be the first Streamlit command)
 st.set_page_config(
     page_title="Quantum Analytics Hub",
     page_icon="🔮",
@@ -8,31 +7,22 @@ st.set_page_config(
     initial_sidebar_state="expanded"
 )
 
-# 2. Complex Idea: Global Session State Management
 if "authenticated" not in st.session_state:
     st.session_state.authenticated = False
 
-# Simple mock authentication gate
-def login_user():
-    st.session_state.authenticated = True
-
-def logout_user():
-    st.session_state.authenticated = False
-
-# 3. UI Layout
 st.title("🔮 Quantum Analytics Hub")
 st.markdown("---")
 
 if not st.session_state.authenticated:
     st.subheader("Secure Gateway")
-    st.info("Please initialize the session to unlock advanced analytics pages.")
+    st.info("💡 **System Note:** The application is currently state-locked. Click below to trigger a global session state change.")
     if st.button("Initialize Session", type="primary"):
-        login_user()
+        st.session_state.authenticated = True
         st.rerun()
 else:
     st.sidebar.success("Session Active")
     if st.sidebar.button("Terminate Session"):
-        logout_user()
+        st.session_state.authenticated = False
         st.rerun()
         
     col1, col2 = st.columns(2)
@@ -51,3 +41,15 @@ else:
         st.center.write("🔄 Caching Engines: Operational")
         st.center.write("📡 Async Data Pipelines: Ready")
         st.center.write("🔐 Session Token: Verified")
+
+    # --- NEW COMMENTARY SECTION ---
+    st.markdown("---")
+    with st.expander("🛠️ Architectural Blueprint: How this page works", expanded=True):
+        st.markdown("""
+        ### Core Concept: Global Session State Management
+        Standard web applications require heavy backend frameworks (like Flask or Django) paired with cookies to remember who you are. 
+        Streamlit handles this natively via `st.session_state`, acting as an in-memory key-value store tied to this specific browser tab session.
+        
+        * **The Logic:** When you clicked *Initialize Session*, we set `st.session_state.authenticated = True` and forced a `st.rerun()`.
+        * **The Impact:** Every sub-page inside the `pages/` directory constantly checks this boolean. If a user tries to bookmark or bypass straight to the Analytics page without authenticating here, the system intercepts them and calls `st.stop()`, killing the execution thread instantly.
+        """)
