@@ -37,7 +37,6 @@ else:
     # Sidebar control to kill the token state
     st.sidebar.success("🔑 Global Session Active")
     
-    # TOOLTIP UPGRADE: Added 'help' parameter to the side button
     if st.sidebar.button(
         "Terminate Session Matrix", 
         help="[Mechanism #1]: Mutates st.session_state.authenticated to False, instantly locking sub-page threads."
@@ -51,7 +50,6 @@ else:
     col1, col2 = st.columns(2)
     
     with col1:
-        # TOOLTIP UPGRADE: Core Cluster Header Tooltip
         st.header(
             "Core Cluster Operations", 
             help="[Mechanism #1]: This interface is entirely conditional on Session State. If the global token is missing or terminated, this DOM structure cannot execute."
@@ -74,7 +72,6 @@ else:
     # ==========================================
     # 5. INTEGRATED LIVE API TELEMETRY NODE
     # ==========================================
-    # TOOLTIP UPGRADE: Header links directly to Mechanism #2 & #4
     st.header(
         "🌐 Integrated Real-Time API Node", 
         help="[Mechanism #2 & #4]: Outbound HTTPS requests pull JSON datasets dynamically based on the sidebar filters and map them to global open-street-map coordinates."
@@ -84,7 +81,6 @@ else:
     st.sidebar.markdown("---")
     st.sidebar.header("Global API Filters")
     
-    # TOOLTIP UPGRADE: Slider parameters explain server-side query construction
     min_magnitude = st.sidebar.slider(
         "Minimum Magnitude", 1.0, 7.0, 4.5, step=0.5,
         help="[Mechanism #2]: Injects filtering rules straight into the REST URL query string to perform server-side parsing before data reaches your browser."
@@ -107,7 +103,7 @@ else:
             for item in features:
                 props = item.get("properties", {})
                 geom = item.get("geometry", {})
-                coords = geom.get("coordinates", [0, 0, 0]) # [longitude, latitude, depth]
+                coords = geom.get("coordinates", [0, 0, 0])
                 
                 cleaned_records.append({
                     "Location": props.get("place", "Unknown Axis"),
@@ -122,7 +118,6 @@ else:
             st.error(f"🔴 Telemetry Fetch Fault: {e}")
             return pd.DataFrame()
 
-    # Ingestion triggered live on script run
     with st.spinner("Streaming remote payload..."):
         telemetry_df = fetch_geospatial_telemetry(min_magnitude, limit)
 
@@ -131,7 +126,6 @@ else:
         metric_col, map_col = st.columns([1, 2])
         
         with metric_col:
-            # TOOLTIP UPGRADE: Metric components link to Data Normalization
             st.metric(
                 "Detected Vectors", len(telemetry_df),
                 help="[Mechanism #3]: Represents the row total (N) of the clean tabular vector matrix parsed out of raw nested GeoJSON lists."
@@ -140,15 +134,17 @@ else:
                 "Peak Severity", f"{telemetry_df['Magnitude'].max():.1f} Mag",
                 help="[Mechanism #3]: Vector calculation computing the maximum scalar value within the generated DataFrame column vector."
             )
-            # TOOLTIP UPGRADE: DataFrame overview tooltip
+            
+            # --- FIXED SECTION ---
+            # Instead of passing help= inside st.dataframe(), we render a clear caption right above it
+            st.caption("📋 **[Mechanism #3]: Raw Flattened Matrix Preview**")
             st.dataframe(
                 telemetry_df[["Location", "Magnitude"]].head(6), 
-                use_container_width=True,
-                help="[Mechanism #3]: Flattened structural matrix. Data elements have been unpacked from nested JSON properties into standard key-value series arrays."
+                use_container_width=True
             )
+            # ----------------------
         
         with map_col:
-            # Note: Plotly has its own native tooltips (hover text) built right into the chart canvas element.
             fig = px.scatter_mapbox(
                 telemetry_df, lat="Latitude", lon="Longitude", size="Magnitude", color="Depth (km)",
                 color_continuous_scale="Plasma", hover_name="Location", zoom=1, height=350
