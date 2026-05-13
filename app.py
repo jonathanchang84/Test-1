@@ -31,8 +31,9 @@ else:
 
     # Clean Landing Layout
     col1, col2 = st.columns([2, 1])
-    with col1:
-        st.header("Welcome to the Master Telemetry Node", divider="teal")
+        with col1:
+        # Changed divider color from "teal" to "blue" to comply with Streamlit's style rules
+        st.header("Welcome to the Master Telemetry Node", divider="blue")
         st.markdown("""
         This platform represents an enterprise-grade web application architecture built entirely within Python. 
         By utilizing decoupled processing layouts, the computational workloads are dynamically isolated across independent system nodes.
