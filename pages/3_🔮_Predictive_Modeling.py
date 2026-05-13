@@ -88,22 +88,22 @@ if not ml_df.empty:
 # EDUCATIONAL CORE & ENGINEERING DOCUMENTATION
 # ==========================================
 st.markdown("---")
-edu_tabs = st.tabs(["🎓 Machine Learning Core Concepts Explained", "🛠️ System Engineering Blueprint"])
+edu_tabs = st.tabs(["📊 Linear Regression Mechanics Explained", "🛠️ System Engineering Blueprint"])
 
 with edu_tabs[0]:
-    st.subheader("Understanding the Machine Learning Engine on this Page")
+    st.subheader("Understanding the Trend Estimation Engine on this Page")
     st.markdown("""
-    Because there are no deep neural networks or complex AI avatars visible on this workspace, the machine learning occurring here is purely mathematical, silent, and foundational. This node utilizes **Supervised Machine Learning**, specifically an optimization algorithm known as **Linear Regression**.
+    Because there are no deep neural networks or complex AI models visible on this workspace, the machine learning occurring here is purely mathematical, silent, and foundational. This node utilizes **Supervised Machine Learning**, specifically an optimization algorithm known as **Linear Regression**.
 
     #### 1. The Core Objective: Pattern Synthesis
     The system asks a fundamental predictive question: *Based on the chronological timeline of recent seismic events, is the overall data trajectory trending upward, trending downward, or remaining perfectly stable?*
     To answer this, the system cannot guess by simply inspecting the chart dots. It must mathematically establish a unified line of best fit.
 
     #### 2. The Step-by-Step Data Pipeline
-    * **Feature Engineering:** Machine learning models cannot parse human date formats (e.g., `2026-05-13`). The script transforms the **Time** column into raw Unix Epoch floats (total seconds elapsed since 1970). This yields our computational **Feature Matrix ($X$)**, while **Magnitude** serves as our **Target Vector ($Y$)**.
+    * **Feature Engineering:** Machine learning models cannot parse human date formats. The script transforms the **Time** column into raw Unix Epoch floats (total seconds elapsed since 1970). This yields our computational **Feature Matrix ($X$)**, while **Magnitude** serves as our **Target Vector ($Y$)**.
     * **Model Instantiation:** The application initializes a blank mathematical container using Python's `scikit-learn` ecosystem: `model = LinearRegression()`.
     * **Model Training (`.fit()`):** When executing `model.fit(X, Y)`, the algorithm parses every single row inside the data table below. It utilizes a routine called **Ordinary Least Squares (OLS)**, adjusting a linear trajectory until it minimizes the squared distances between the trendline and every historical scatter point.
-    * **Statistical Prediction (`.predict()`):** The trained student model outputs a mathematical formula in memory:
+    * **Statistical Prediction (`.predict()`):** The trained model outputs a mathematical formula in memory:
     """)
     
     st.latex(r"Y = \beta_0 + \beta_1X")
