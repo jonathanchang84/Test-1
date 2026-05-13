@@ -63,23 +63,20 @@ if not ml_df.empty:
     std_mag = ml_df['Magnitude'].std()
     variance_mag = ml_df['Magnitude'].var()
     
-    # --- UPPER ROW: SUMMARY METRICS & CHRONOLOGICAL CHART ---
-    # Split the metric bar into 4 clean columns across the screen width
-    metric_col1, metric_col2, metric_col3, metric_col4 = st.columns(4)
+    # --- UPPER ROW: FIVE-COLUMN SUMMARY METRIC RIBBON ---
+    # Split the metric bar into 5 clean, distinct columns across the widescreen layout
+    metric_col1, metric_col2, metric_col3, metric_col4, metric_col5 = st.columns(5)
     
     with metric_col1:
         st.metric("Training Sample Size (N)", sample_size)
     with metric_col2:
         st.metric("Mean Magnitude (Average)", f"{mean_mag:.2f} Mag")
     with metric_col3:
-        st.metric("Median Magnitude (Middle Point)", f"{median_mag:.2f} Mag", help="The exact middle value of the sorted sample distribution.")
+        st.metric("Median Magnitude (Middle)", f"{median_mag:.2f} Mag")
     with metric_col4:
-        # Standard Deviation card with Variance embedded safely inside the hover tooltip descriptor
-        st.metric(
-            "Standard Deviation (σ)", 
-            f"±{std_mag:.2f} Mag", 
-            help=f"Measures the data dispersion around the mean. The calculated mathematical variance is {variance_mag:.4f}"
-        )
+        st.metric("Standard Deviation (σ)", f"±{std_mag:.2f} Mag", help="Measures absolute data dispersion around the calculated mean baseline.")
+    with metric_col5:
+        st.metric("Statistical Variance (σ²)", f"{variance_mag:.4f}", help="The average of the squared deviations from the mean distribution score.")
         
     st.subheader("Linear Regression Model Trajectory Mapping", help="[Mechanism #5]: Fits trendlines straight over dynamic series arrays.")
     
