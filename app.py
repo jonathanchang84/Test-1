@@ -1,4 +1,5 @@
 import streamlit as st
+from pathlib import Path
 
 # 1. Global Application Layout Configuration
 st.set_page_config(
@@ -11,15 +12,35 @@ st.set_page_config(
 if "authenticated" not in st.session_state:
     st.session_state["authenticated"] = True
 
-# 2. DEFINE PAGES USING THE NATIVE DICTIONARY FORMAT
-# This completely eliminates string checking bugs and prevents duplicate links
-pg = st.navigation({
-    "Navigation": [
-        st.Page("pages/0_🔮_Hub_Home.py", title="Home", icon="🏠", default=True),
-        st.Page("pages/1_🗺️_Geospatial_Telemetry.py", title="Geospatial Telemetry", icon="🗺️"),
-        st.Page("pages/2_🔮_Predictive_Modeling.py", title="Predictive Modeling", icon="🔮")
-    ]
-})
+# 2. BULLETPROOF INDEX-BASED PAGES SCAVENGER
+# We scan the physical directory to avoid hardcoding broken string filenames.
+pages_dir = Path(__file__).parent / "pages"
+clean_nav_pages = []
 
-# 3. RUN NAVIGATION ROUTER
+if pages_dir.exists():
+    # Grab all python files sitting in the pages folder and sort them 0, 1, 2...
+    discovered_files = sorted(list(pages_dir.glob("*.py")))
+    
+    # We map them purely by their sorted position so spelling/emojis can't break it
+    for idx, file_path in enumerate(discovered_files):
+        filename = file_path.name
+        relative_path = f"pages/{filename}"
+        
+        if idx == 0:
+            clean_nav_pages.append(st.Page(relative_path, title="Home", icon="🏠", default=True))
+        elif idx == 1:
+            clean_nav_pages.append(st.Page(relative_path, title="Geospatial Telemetry", icon="🗺️"))
+        elif idx == 2:
+            clean_nav_pages.append(st.Page(relative_path, title="Predictive Modeling", icon="🔮"))
+        else:
+            # Safely catch any unexpected leftover files without duplicating titles
+            extra_title = filename.replace(".py", "").split("_")[-1]
+            clean_nav_pages.append(st.Page(relative_path, title=f"Extra Node: {extra_title}", icon="⚙️"))
+
+# 3. RUN ROUTER
+if clean_nav_pages:
+    pg = st.navigation(clean_nav_pages)
+else:
+    pg = st.navigation([])
+
 pg.run()
