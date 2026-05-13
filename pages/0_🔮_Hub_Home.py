@@ -1,6 +1,6 @@
 import streamlit as st
 
-# Main Entry Title Block (st.set_page_config is handled globally by app.py now)
+# Main Entry Title Block
 st.title("🎨 Modular Analytics & Visualization Capabilities: A Technical Exercise")
 st.markdown("##### *An Interactive Technical Portfolio Demonstrating Rapid Deployment Features for Data-Driven Applications*")
 st.markdown("---")
