@@ -29,10 +29,10 @@ else:
         st.session_state.authenticated = False
         st.rerun()
 
-    # Clean Landing Layout
+    # Clean Landing Layout (Perfectly indented inside the 'else' block)
     col1, col2 = st.columns([2, 1])
-        with col1:
-        # Changed divider color from "teal" to "blue" to comply with Streamlit's style rules
+    
+    with col1:
         st.header("Welcome to the Master Telemetry Node", divider="blue")
         st.markdown("""
         This platform represents an enterprise-grade web application architecture built entirely within Python. 
@@ -45,6 +45,7 @@ else:
         
         *Use the left sidebar navigation matrix to traverse active system modules.*
         """)
+        
     with col2:
         st.info("💡 **Navigation Protocol:** Every sub-page acts as an isolated sandbox but reads from the same unified memory stack (`st.session_state`), maintaining persistent data compliance.")
 
