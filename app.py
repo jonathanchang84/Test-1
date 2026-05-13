@@ -36,7 +36,12 @@ if not st.session_state.authenticated:
 else:
     # Sidebar control to kill the token state
     st.sidebar.success("🔑 Global Session Active")
-    if st.sidebar.button("Terminate Session Matrix"):
+    
+    # TOOLTIP UPGRADE: Added 'help' parameter to the side button
+    if st.sidebar.button(
+        "Terminate Session Matrix", 
+        help="[Mechanism #1]: Mutates st.session_state.authenticated to False, instantly locking sub-page threads."
+    ):
         st.session_state.authenticated = False
         st.rerun()
 
@@ -46,7 +51,11 @@ else:
     col1, col2 = st.columns(2)
     
     with col1:
-        st.header("Core Cluster Operations")
+        # TOOLTIP UPGRADE: Core Cluster Header Tooltip
+        st.header(
+            "Core Cluster Operations", 
+            help="[Mechanism #1]: This interface is entirely conditional on Session State. If the global token is missing or terminated, this DOM structure cannot execute."
+        )
         st.write("""
             Welcome back to the master command node. The cloud environment is fully synchronized:
             * **State Preservation:** Syncing token authentications across all sub-nodes.
@@ -65,13 +74,25 @@ else:
     # ==========================================
     # 5. INTEGRATED LIVE API TELEMETRY NODE
     # ==========================================
-    st.header("🌐 Integrated Real-Time API Node")
+    # TOOLTIP UPGRADE: Header links directly to Mechanism #2 & #4
+    st.header(
+        "🌐 Integrated Real-Time API Node", 
+        help="[Mechanism #2 & #4]: Outbound HTTPS requests pull JSON datasets dynamically based on the sidebar filters and map them to global open-street-map coordinates."
+    )
     
     # Sidebar Filters acting as Server-Side parameters
     st.sidebar.markdown("---")
     st.sidebar.header("Global API Filters")
-    min_magnitude = st.sidebar.slider("Minimum Magnitude", 1.0, 7.0, 4.5, step=0.5)
-    limit = st.sidebar.slider("Max Record Limit", 10, 100, 40, step=10)
+    
+    # TOOLTIP UPGRADE: Slider parameters explain server-side query construction
+    min_magnitude = st.sidebar.slider(
+        "Minimum Magnitude", 1.0, 7.0, 4.5, step=0.5,
+        help="[Mechanism #2]: Injects filtering rules straight into the REST URL query string to perform server-side parsing before data reaches your browser."
+    )
+    limit = st.sidebar.slider(
+        "Max Record Limit", 10, 100, 40, step=10,
+        help="[Mechanism #2]: Restricts maximum payload data packets to prevent browser thread latency and network saturation."
+    )
 
     # REST API Data Fetching and Normalization Function
     def fetch_geospatial_telemetry(min_mag, max_rows):
@@ -110,11 +131,24 @@ else:
         metric_col, map_col = st.columns([1, 2])
         
         with metric_col:
-            st.metric("Detected Vectors", len(telemetry_df))
-            st.metric("Peak Severity", f"{telemetry_df['Magnitude'].max():.1f} Mag")
-            st.dataframe(telemetry_df[["Location", "Magnitude"]].head(6), use_container_width=True)
+            # TOOLTIP UPGRADE: Metric components link to Data Normalization
+            st.metric(
+                "Detected Vectors", len(telemetry_df),
+                help="[Mechanism #3]: Represents the row total (N) of the clean tabular vector matrix parsed out of raw nested GeoJSON lists."
+            )
+            st.metric(
+                "Peak Severity", f"{telemetry_df['Magnitude'].max():.1f} Mag",
+                help="[Mechanism #3]: Vector calculation computing the maximum scalar value within the generated DataFrame column vector."
+            )
+            # TOOLTIP UPGRADE: DataFrame overview tooltip
+            st.dataframe(
+                telemetry_df[["Location", "Magnitude"]].head(6), 
+                use_container_width=True,
+                help="[Mechanism #3]: Flattened structural matrix. Data elements have been unpacked from nested JSON properties into standard key-value series arrays."
+            )
         
         with map_col:
+            # Note: Plotly has its own native tooltips (hover text) built right into the chart canvas element.
             fig = px.scatter_mapbox(
                 telemetry_df, lat="Latitude", lon="Longitude", size="Magnitude", color="Depth (km)",
                 color_continuous_scale="Plasma", hover_name="Location", zoom=1, height=350
@@ -129,7 +163,7 @@ else:
     with st.expander("🛠️ System Engineering Blueprint: Feature Matrix & Core Mechanisms", expanded=True):
         
         st.markdown("""
-        ### 1. Global Session State & Security Gateways
+        ### [1] Global Session State & Security Gateways
         * **The Feature:** A conditional gateway that blocks unauthorized users from seeing metrics, maps, or navigating to sub-pages.
         * **The Mechanism (`st.session_state`):** Standard HTTP web environments are naturally stateless—every time a user clicks something, the script re-runs from scratch and "forgets" who you are. We bypass this by instantiating an in-memory key-value dictionary on the server:
             ```python
@@ -140,7 +174,7 @@ else:
         
         ---
         
-        ### 2. Live REST API Integration & Data Pipelines
+        ### [2] Live REST API Integration & Data Pipelines
         * **The Feature:** Dynamically fetching and plotting real-world tectonic anomalies in real-time without requiring a static database.
         * **The Mechanism (`requests` + Server-Side Filtering):** When this homepage builds, it instantiates an outbound HTTPS handshake with the remote USGS server using Python's `requests` library. 
             Instead of downloading the entire global database (which would cause massive network latency), we inject your slider values as query strings directly into the URL endpoint:
@@ -149,14 +183,14 @@ else:
             
         ---
         
-        ### 3. Structural Matrix Flattening (Data Normalization)
+        ### [3] Structural Matrix Flattening (Data Normalization)
         * **The Feature:** Transforming raw, unreadable internet packets into clean, queryable tables and geographic coordinates.
         * **The Mechanism (GeoJSON Parsing):** Public APIs transfer data using nested JSON structures. For example, geospatial data is deeply buried inside a tree like: `item["geometry"]["coordinates"][0]`. 
-            Web browsers and plotting libraries cannot natively read this tree structure. Our custom parsing function loops through the inbound JSON stream, strips out the nested layers, and normalizes them into a highly optimized tabular structure: an $180\times C$ row/column vector matrix called a **Pandas DataFrame**. This allows our metric elements and maps to query values instantaneously.
+            Web browsers and plotting libraries cannot naturally read this tree structure. Our custom parsing function loops through the inbound JSON stream, strips out the nested layers, and normalizes them into a highly optimized tabular structure: an $180\times C$ row/column vector matrix called a **Pandas DataFrame**. This allows our metric elements and maps to query values instantaneously.
             
         ---
         
-        ### 4. Geospatial Topology Visualization
+        ### [4] Geospatial Topology Visualization
         * **The Feature:** A fully interactive global map tracking data coordinates.
         * **The Mechanism (Plotly Mapbox Canvas):** We feed our normalized Pandas DataFrame into `plotly.express.scatter_mapbox`. Plotly reads the `Latitude` and `Longitude` float arrays from our matrix and overlays them precisely onto an open-source mapping engine (`open-street-map`). 
             Instead of plotting static points, it dynamically assigns visual properties based on data columns: the *size* of the bubble maps to the earthquake's magnitude, and the *color spectrum* maps to the subterranean depth (km) using a specialized color-ramp array.
@@ -166,14 +200,14 @@ else:
         st.markdown("### 🗺️ Sub-Page Architecture (Accessible via Left Sidebar Menu)")
         
         st.markdown("""
-        ### 5. Multi-Dimensional Vector Meshgrids (Analytics Page)
+        ### [5] Multi-Dimensional Vector Meshgrids (Analytics Page)
         * **The Feature:** A 3D wave model that recalculates based on user resolution limits.
         * **The Mechanism (`@st.cache_data` Optimization):** Calculating complex coordinate physics for thousands of data points is incredibly expensive for a server's CPU. If a user simply changes the *color palette* of the chart, it would normally force the server to waste energy recalculating all the geometry formulas from scratch.
             By wrapping the function in `@st.cache_data`, Streamlit takes a digital fingerprint of the input arguments. If the resolution size hasn't changed, it instantly serves the mathematical coordinates straight out of fast-access RAM cache memory, bypassing computation latency entirely.
             
         ---
         
-        ### 6. Asynchronous DOM In-Place Mutation (Live Stream Page)
+        ### [6] Asynchronous DOM In-Place Mutation (Live Stream Page)
         * **The Feature:** A chart and metric panel that updates smoothly and continuously like a live financial stock ticker.
         * **The Mechanism (`st.empty()` Element Overwriting):** In a traditional web framework, sending new data to the screen requires a full page refresh. We dodge this completely by declaring a visual placeholder layout: `metric_spot = st.empty()`. 
             This pre-allocates a static set of coordinates in your web browser's DOM tree before any data even exists. When our algorithmic loop runs, it targets that precise layout coordinate and overwrites its internal HTML content dynamically without disturbing the rest of the webpage.
