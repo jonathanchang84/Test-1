@@ -1,5 +1,4 @@
 import streamlit as st
-from pathlib import Path
 
 # 1. Global Application Layout Configuration
 st.set_page_config(
@@ -12,33 +11,16 @@ st.set_page_config(
 if "authenticated" not in st.session_state:
     st.session_state["authenticated"] = True
 
-# 2. MATCH-SPECIFIC PAGE ROUTING ENGINE
-pages_dir = Path(__file__).parent / "pages"
-clean_nav_pages = []
+# 2. EXPLICIT ROUTING ENGINE FOR YOUR EXACT FILE NAMES
+# We pass the exact filenames straight from your pages/ folder to prevent string mismatch bugs
+pg = st.navigation({
+    "Navigation Menu": [
+        st.Page("pages/0_🔮_Hub_Home.py", title="Home", icon="🏠", default=True),
+        st.Page("pages/1_💻_Cluster_Operations.py", title="Cluster Operations", icon="💻"),
+        st.Page("pages/2_🌐_Real_Time_API.py", title="Geospatial Telemetry", icon="🗺️"),
+        st.Page("pages/3_🔮_Predictive_Modeling.py", title="Predictive Modeling", icon="🔮")
+    ]
+})
 
-if pages_dir.exists():
-    # Grab all python files sitting in the pages folder and sort them
-    discovered_files = sorted(list(pages_dir.glob("*.py")))
-    
-    for file_path in discovered_files:
-        filename = file_path.name
-        relative_path = f"pages/{filename}"
-        
-        # Explicitly assign pages based on unique keywords in their filenames
-        if "Hub_Home" in filename or "0_" in filename:
-            clean_nav_pages.append(st.Page(relative_path, title="Home", icon="🏠", default=True))
-        elif "Telemetry" in filename or "1_" in filename:
-            clean_nav_pages.append(st.Page(relative_path, title="Geospatial Telemetry", icon="🗺️"))
-        elif "Predictive" in filename or "2_" in filename:
-            clean_nav_pages.append(st.Page(relative_path, title="Predictive Modeling", icon="🔮"))
-        elif "Cluster" in filename or "3_" in filename:
-            clean_nav_pages.append(st.Page(relative_path, title="Cluster Operations", icon="⚙️"))
-        # Any other backup or duplicate files are completely ignored by skipping the append
-
-# 3. RUN ROUTER WITH FILTERED LIST
-if clean_nav_pages:
-    pg = st.navigation(clean_nav_pages)
-else:
-    pg = st.navigation([])
-
+# 3. RUN NAVIGATION ROUTER
 pg.run()
