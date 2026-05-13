@@ -12,8 +12,7 @@ st.set_page_config(
 if "authenticated" not in st.session_state:
     st.session_state["authenticated"] = True
 
-# 2. BULLETPROOF INDEX-BASED PAGES SCAVENGER
-# We scan the physical directory to avoid hardcoding broken string filenames.
+# 2. FILE POSITION INDEX ENGINE WITH HARD LIMIT
 pages_dir = Path(__file__).parent / "pages"
 clean_nav_pages = []
 
@@ -21,8 +20,9 @@ if pages_dir.exists():
     # Grab all python files sitting in the pages folder and sort them 0, 1, 2...
     discovered_files = sorted(list(pages_dir.glob("*.py")))
     
-    # We map them purely by their sorted position so spelling/emojis can't break it
-    for idx, file_path in enumerate(discovered_files):
+    # CRITICAL FIX: Slice the list [:3] to strictly allow ONLY the first 3 files.
+    # Any extra ghost files or duplicates on the server will be completely ignored.
+    for idx, file_path in enumerate(discovered_files[:3]):
         filename = file_path.name
         relative_path = f"pages/{filename}"
         
@@ -32,10 +32,6 @@ if pages_dir.exists():
             clean_nav_pages.append(st.Page(relative_path, title="Geospatial Telemetry", icon="🗺️"))
         elif idx == 2:
             clean_nav_pages.append(st.Page(relative_path, title="Predictive Modeling", icon="🔮"))
-        else:
-            # Safely catch any unexpected leftover files without duplicating titles
-            extra_title = filename.replace(".py", "").split("_")[-1]
-            clean_nav_pages.append(st.Page(relative_path, title=f"Extra Node: {extra_title}", icon="⚙️"))
 
 # 3. RUN ROUTER
 if clean_nav_pages:
