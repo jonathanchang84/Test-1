@@ -11,16 +11,18 @@ if not st.session_state.get("authenticated", False):
     st.error("🔒 Access Denied. Please initialize the session on the Hub landing page.")
     st.stop()
 
+st.title("🔮 Predictive Algorithmic Forecasting Model")
+st.markdown("---")
+
 # Pull baseline reference data from the API with visible error reporting
 def fetch_ml_data():
     url = "https://earthquake.usgs.gov/fdsnws/event/1/query?format=geojson&minmagnitude=3.0&limit=80&orderby=time-asc"
     try:
         response = requests.get(url, timeout=15)
-        response.raise_for_status() # Force an error if the server responds with a 400 or 500 fault
+        response.raise_for_status() # Force an error if the server responds with a fault
         raw_json = response.json()
         features = raw_json.get("features", [])
         
-        # If the connection worked but returned 0 events
         if not features:
             st.warning("⚠️ API Connection successful, but the USGS database returned zero events for this query window.")
             return pd.DataFrame()
@@ -43,9 +45,6 @@ def fetch_ml_data():
         return pd.DataFrame()
     except Exception as e:
         st.error(f"🔴 Critical Script Intercept: Failed to unpack payload. Details: {e}")
-        return pd.DataFrame()
-        return pd.DataFrame(cleaned)
-    except:
         return pd.DataFrame()
 
 with st.spinner("Processing time-series vectors..."):
@@ -129,9 +128,12 @@ if not ml_df.empty:
     # --- LOWER ROW: FULL-WIDTH ROW ENTRY MATRIX ---
     st.subheader("Model Input Matrix", help="[Mechanism #5]: This is the clean structural tabular vector dataset feeding directly into the Scikit-Learn training layer.")
     st.caption("📋 **[Mechanism #5]: Model Training Inputs (Chronological Order)**")
+    
+    # Display clean columns and completely hide the sequential index matrix column
     st.dataframe(
-        ml_df[["Event Number", "Time", "Location", "Magnitude"]],
+        ml_df[["Time", "Location", "Magnitude"]],
         use_container_width=True,
+        hide_index=True,
         height=300
     )
 
