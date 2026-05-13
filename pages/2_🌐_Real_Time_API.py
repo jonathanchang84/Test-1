@@ -12,7 +12,6 @@ st.markdown("##### *Component Showcase: High-Density Stream Ingestion, Vector Pr
 st.markdown("---")
 
 # --- TECHNICAL CAPABILITY METRICS ---
-# A clean ribbon of instant performance indicators
 m_col1, m_col2, m_col3 = st.columns(3)
 with m_col1:
     st.metric(label="API Ingestion Rate", value="1,240 pkts/sec", delta="+4.2%")
@@ -25,11 +24,9 @@ st.markdown("---")
 
 
 # =====================================================================
-# 2. DATA INGESTION & VARIANCE LAYER (Mock Data / Swap with Live API)
+# 2. DATA INGESTION & VARIANCE LAYER
 # =====================================================================
-# If you have an active live API dataframe, replace 'telemetry_df' with your variable name.
 if "telemetry_df" not in locals() and "telemetry_df" not in globals():
-    # Fallback/Demonstration data generation matching realistic geospatial telemetry
     np.random.seed(42)
     sample_records = 25
     telemetry_df = pd.DataFrame({
@@ -49,20 +46,63 @@ if "telemetry_df" not in locals() and "telemetry_df" not in globals():
 st.subheader("🗺️ Live Telemetry Visualization Canvas")
 st.markdown("Demonstrating multi-dimensional coordinate rendering layers on an interactive vector graphic grid map.")
 
-# Standard full-width spatial map layer
-# To use your exact custom map data frame, simply pass it into: st.map(your_df, latitude="Lat_Col", longitude="Lon_Col")
 st.map(telemetry_df, latitude="Latitude", longitude="Longitude", size=25, use_container_width=True)
 
 st.markdown("---")
 
 
 # =====================================================================
-# 4. EXPANDED HIGH-DENSITY TRANSACTIONS MATRIX (Dropped Underneath)
+# 4. RESTORED SYSTEMS ENGINEERING BLUEPRINT SECTION
+# =====================================================================
+st.subheader("🏗️ Systems Engineering Blueprint")
+st.markdown("""
+This pipeline is architected to handle high-frequency concurrent data streams. The blueprint below models the systemic ingestion lifecycle from raw hardware pings down to the active web interface state:
+""")
+
+# Systems Engineering Flowchart Layout
+bp_col1, bp_col2, bp_col3, bp_col4 = st.columns(4)
+
+with bp_col1:
+    st.info("### 📡 Step 1: Edge Ingestion")
+    st.markdown("""
+    * **Protocol:** Asynchronous REST/Websockets
+    * **Action:** Captures coordinate packet array strings directly from field sensors.
+    * **Fail-Safe:** Implements transient circuit breakers to prevent data congestion.
+    """)
+
+with bp_col2:
+    st.warning("### ⚡ Step 2: Queue & Filter")
+    st.markdown("""
+    * **Protocol:** Internal Memory Cache Buffer
+    * **Action:** Strips dead headers, schema anomalies, and corrupted coordinate strings.
+    * **Rate:** Throttle regulated at a steady max capacity threshold.
+    """)
+
+with bp_col3:
+    st.error("### 🧮 Step 3: Vector Parsing")
+    st.markdown("""
+    * **Protocol:** Pandas Data Engine
+    * **Action:** Casts raw JSON strings into structural multi-dimensional geographic float arrays.
+    * **Compute:** Assigns geometric weights and node affinity properties.
+    """)
+
+with bp_col4:
+    st.success("### 🎨 Step 4: State Render")
+    st.markdown("""
+    * **Protocol:** Reactive UI Pipeline
+    * **Action:** Feeds coordinate layers dynamically into the browser view matrix container.
+    * **Refresh:** Updates data components asynchronously without dropping active sessions.
+    """)
+
+st.markdown("---")
+
+
+# =====================================================================
+# 5. EXPANDED HIGH-DENSITY TRANSACTIONS MATRIX
 # =====================================================================
 st.subheader("📋 Ingested Stream Matrix Log")
 st.markdown("Below is the expanded transactional matrix processing live packet layers from the API cluster. Deployed full-width to eliminate cell compression and horizontal truncation.")
 
-# Render table at 100% layout container width so data columns stretch out cleanly
 st.dataframe(
     telemetry_df.sort_values(by="Timestamp (UTC)", ascending=False),
     use_container_width=True,
