@@ -52,52 +52,7 @@ st.markdown("---")
 
 
 # =====================================================================
-# 4. SYSTEMS ENGINEERING BLUEPRINT SECTION
-# =====================================================================
-st.subheader("🏗️ Systems Engineering Blueprint")
-st.markdown("""
-This pipeline is architected to handle high-frequency concurrent data streams. The blueprint below models the systemic ingestion lifecycle from raw hardware pings down to the active web interface state:
-""")
-
-bp_col1, bp_col2, bp_col3, bp_col4 = st.columns(4)
-
-with bp_col1:
-    st.info("### 📡 Step 1: Edge Ingestion")
-    st.markdown("""
-    * **Protocol:** Asynchronous REST/Websockets
-    * **Action:** Captures coordinate packet array strings directly from field sensors.
-    * **Fail-Safe:** Implements transient circuit breakers to prevent data congestion.
-    """)
-
-with bp_col2:
-    st.warning("### ⚡ Step 2: Queue & Filter")
-    st.markdown("""
-    * **Protocol:** Internal Memory Cache Buffer
-    * **Action:** Strips dead headers, schema anomalies, and corrupted coordinate strings.
-    * **Rate:** Throttle regulated at a steady max capacity threshold.
-    """)
-
-with bp_col3:
-    st.error("### 🧮 Step 3: Vector Parsing")
-    st.markdown("""
-    * **Protocol:** Pandas Data Engine
-    * **Action:** Casts raw JSON strings into structural multi-dimensional geographic float arrays.
-    * **Compute:** Assigns geometric weights and node affinity properties.
-    """)
-
-with bp_col4:
-    st.success("### 🎨 Step 4: State Render")
-    st.markdown("""
-    * **Protocol:** Reactive UI Pipeline
-    * **Action:** Feeds coordinate layers dynamically into the browser view matrix container.
-    * **Refresh:** Updates data components asynchronously without dropping active sessions.
-    """)
-
-st.markdown("---")
-
-
-# =====================================================================
-# 5. EXPANDED HIGH-DENSITY TRANSACTIONS MATRIX
+# 4. EXPANDED HIGH-DENSITY TRANSACTIONS MATRIX
 # =====================================================================
 st.subheader("📋 Ingested Stream Matrix Log")
 st.markdown("Below is the expanded transactional matrix processing live packet layers from the API cluster. Deployed full-width to eliminate cell compression and horizontal truncation.")
@@ -108,18 +63,26 @@ st.dataframe(
     hide_index=True
 )
 
+
+# =====================================================================
+# 5. ALIGNED ENGINEERING NOTES SECTION (Expander Design Pattern)
+# =====================================================================
+# Engineering Notes Section Header
 st.markdown("---")
+with st.expander("🛠️ System Engineering Blueprint: Feature Matrix & Core Mechanisms", expanded=True):
+    st.markdown("""
+    ### [Mechanism #1] Global Session State & Security Gateways
+    * **The Feature:** Conditional access enforcement across the multi-page workspace environment.
+    * **The Mechanism:** This node verifies `st.session_state.authenticated`. If it resolves to `False`, the app intercepts execution instantly using `st.stop()`, preventing components from rendering into the DOM.
 
+    ### [Mechanism #2] Asynchronous REST Vector Ingestion
+    * **The Feature:** High-frequency real-time geographic data packet streaming.
+    * **The Mechanism:** Leverages background pooling threads to read JSON streams, caching delta metrics globally before parsing multi-dimensional arrays out to the visualization layers.
 
-# =====================================================================
-# 6. ALIGNED MECHANISMS BLOCK (Blockquote Design Pattern)
-# =====================================================================
-st.subheader("🛠️ Underlying Structural Mechanisms")
-st.markdown("""
-> * **Dynamic Thread Polling:** Uses non-blocking Python `requests` routines to interface with target endpoints. The interface state updates locally using independent frame execution loops, optimizing responsiveness.
-> * **Mapbox WebGL Engine:** Leverages underlying Mapbox tile routing to load geospatial vectors. Lat/Lon point distribution arrays are parsed as tabular matrices for immediate, lightweight hardware rendering.
-> * **Session Boundary Integrity:** Maintains clean session state variables across independent dashboard page swaps. Prevents memory decay and variables crossing over into other network client instances.
-""")
+    ### [Mechanism #3] Hardware-Accelerated WebGL Rendering
+    * **The Feature:** Smooth map rendering of complex geographical coordinate weights.
+    * **The Mechanism:** Binds the tabular Pandas float array directly to Mapbox server modules, preventing client-side UI lockups or frame rate dropping during heavy telemetry shifts.
+    """)
 
 st.markdown("---")
 st.caption("⚙️ **Capabilities Framework Engine:** Active | **UI Framework:** Streamlit Dark Production | **API Layer:** Connected")
