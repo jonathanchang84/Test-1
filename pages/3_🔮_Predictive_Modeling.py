@@ -54,16 +54,32 @@ if not ml_df.empty:
     
     # 1. Clean data and force strict sequence indexing
     ml_df = ml_df.sort_values(by="Time").reset_index(drop=True)
-    
-    # Create a human-friendly "Event Number" column starting at 1 instead of 0
     ml_df["Event Number"] = ml_df.index + 1
     
+    # --- CALCULATE ADVANCED STATISTICAL DESCRIPTORS ---
+    sample_size = len(ml_df)
+    mean_mag = ml_df['Magnitude'].mean()
+    median_mag = ml_df['Magnitude'].median()
+    std_mag = ml_df['Magnitude'].std()
+    variance_mag = ml_df['Magnitude'].var()
+    
     # --- UPPER ROW: SUMMARY METRICS & CHRONOLOGICAL CHART ---
-    metric_col1, metric_col2, _ = st.columns([1, 1, 2])
+    # Split the metric bar into 4 clean columns across the screen width
+    metric_col1, metric_col2, metric_col3, metric_col4 = st.columns(4)
+    
     with metric_col1:
-        st.metric("Training Sample Size (N)", len(ml_df))
+        st.metric("Training Sample Size (N)", sample_size)
     with metric_col2:
-        st.metric("Mean Vector Magnitude", f"{ml_df['Magnitude'].mean():.2f} Mag")
+        st.metric("Mean Magnitude (Average)", f"{mean_mag:.2f} Mag")
+    with metric_col3:
+        st.metric("Median Magnitude (Middle Point)", f"{median_mag:.2f} Mag", help="The exact middle value of the sorted sample distribution.")
+    with metric_col4:
+        # Standard Deviation card with Variance embedded safely inside the hover tooltip descriptor
+        st.metric(
+            "Standard Deviation (σ)", 
+            f"±{std_mag:.2f} Mag", 
+            help=f"Measures the data dispersion around the mean. The calculated mathematical variance is {variance_mag:.4f}"
+        )
         
     st.subheader("Linear Regression Model Trajectory Mapping", help="[Mechanism #5]: Fits trendlines straight over dynamic series arrays.")
     
@@ -76,21 +92,17 @@ if not ml_df.empty:
     model.fit(X_train, Y_train)
     
     # 3. GENERATE THE FUTURE STEPS
-    # Graph out all historical events and project cleanly out to 20 imaginary future events
     historical_count = len(ml_df)
     forecast_extension = 20
     total_horizon_steps = historical_count + forecast_extension
     
-    # Create an array representing [1, 2, 3 ... 80, 81 ... 100]
     forecast_axis = np.arange(1, total_horizon_steps + 1).reshape(-1, 1)
-    
-    # Predict values for the entire line
     predictions = model.predict(forecast_axis)
     
     # 4. PLOT VISUALIZATION CANVAS
     trend_fig = go.Figure()
     
-    # Historical Observed Points (X-axis is now the clean integer sequence)
+    # Historical Observed Points
     trend_fig.add_trace(go.Scatter(
         x=ml_df["Event Number"], 
         y=ml_df['Magnitude'],
@@ -101,7 +113,7 @@ if not ml_df.empty:
         marker=dict(size=6)
     ))
     
-    # Extended Red Predictive Trendline (Cuts right through history and pushes into the future horizon)
+    # Extended Red Predictive Trendline
     trend_fig.add_trace(go.Scatter(
         x=forecast_axis.flatten(), 
         y=predictions.flatten(),
@@ -117,7 +129,7 @@ if not ml_df.empty:
         legend=dict(orientation="h", yanchor="bottom", y=1.02, xanchor="right", x=1),
         xaxis=dict(
             title="Chronological Event Sequence (Historical Tracking ➡️ Future Forecast Window)",
-            dtick=10  # Put a marker every 10 events to keep it scannable
+            dtick=10
         ),
         yaxis=dict(title="Magnitude")
     )
@@ -129,7 +141,6 @@ if not ml_df.empty:
     st.subheader("Model Input Matrix", help="[Mechanism #5]: This is the clean structural tabular vector dataset feeding directly into the Scikit-Learn training layer.")
     st.caption("📋 **[Mechanism #5]: Model Training Inputs (Chronological Order)**")
     
-    # Display clean columns and completely hide the sequential index matrix column
     st.dataframe(
         ml_df[["Time", "Location", "Magnitude"]],
         use_container_width=True,
