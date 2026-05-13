@@ -112,30 +112,14 @@ st.markdown("---")
 
 
 # =====================================================================
-# 6. RESTORED UNDERLYING MECHANISMS SECTION
+# 6. ALIGNED MECHANISMS BLOCK (Blockquote Design Pattern)
 # =====================================================================
 st.subheader("🛠️ Underlying Structural Mechanisms")
-st.markdown("An audit trail of the low-level technical packages and computational engineering principles enabling this interface node:")
-
-mech_col1, mech_col2, mech_col3 = st.columns(3)
-
-with mech_col1:
-    st.markdown("#### 🔄 Dynamic Thread Polling")
-    st.markdown("""
-    Uses non-blocking Python `requests` routines to interface with target endpoints. The interface state updates locally using independent frame execution loops, optimizing responsiveness.
-    """)
-
-with mech_col2:
-    st.markdown("#### 🗺️ Mapbox WebGL Engine")
-    st.markdown("""
-    Leverages underlying Mapbox tile routing to load geospatial vectors. Lat/Lon point distribution arrays are parsed as tabular matrices for immediate, lightweight hardware rendering.
-    """)
-
-with mech_col3:
-    st.markdown("#### 💾 Session Boundary Integrity")
-    st.markdown("""
-    Maintains clean session state variables across independent dashboard page swaps. Prevents memory decay and variables crossing over into other network client instances.
-    """)
+st.markdown("""
+> * **Dynamic Thread Polling:** Uses non-blocking Python `requests` routines to interface with target endpoints. The interface state updates locally using independent frame execution loops, optimizing responsiveness.
+> * **Mapbox WebGL Engine:** Leverages underlying Mapbox tile routing to load geospatial vectors. Lat/Lon point distribution arrays are parsed as tabular matrices for immediate, lightweight hardware rendering.
+> * **Session Boundary Integrity:** Maintains clean session state variables across independent dashboard page swaps. Prevents memory decay and variables crossing over into other network client instances.
+""")
 
 st.markdown("---")
 st.caption("⚙️ **Capabilities Framework Engine:** Active | **UI Framework:** Streamlit Dark Production | **API Layer:** Connected")
