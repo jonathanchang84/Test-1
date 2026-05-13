@@ -38,8 +38,11 @@ with st.spinner("Processing time-series vectors..."):
 
 if not ml_df.empty:
     
-    # Force chronological alignment and reset indices to sequential integers (0, 1, 2...)
+    # 1. Clean data and force strict sequence indexing
     ml_df = ml_df.sort_values(by="Time").reset_index(drop=True)
+    
+    # Create a human-friendly "Event Number" column starting at 1 instead of 0
+    ml_df["Event Number"] = ml_df.index + 1
     
     # --- UPPER ROW: SUMMARY METRICS & CHRONOLOGICAL CHART ---
     metric_col1, metric_col2, _ = st.columns([1, 1, 2])
@@ -50,57 +53,58 @@ if not ml_df.empty:
         
     st.subheader("Linear Regression Model Trajectory Mapping", help="[Mechanism #5]: Fits trendlines straight over dynamic series arrays.")
     
-    # 1. FEATURES AND TARGETS: Use sequential index integers instead of raw timestamp numbers
-    # This guarantees no weird scaling loops or hidden millisecond cluster bugs.
-    X_indices = ml_df.index.values.reshape(-1, 1)
-    Y_magnitudes = ml_df['Magnitude'].values.reshape(-1, 1)
+    # 2. MACHINE LEARNING ENGINE MATRICES
+    X_train = ml_df["Event Number"].values.reshape(-1, 1)
+    Y_train = ml_df['Magnitude'].values.reshape(-1, 1)
     
-    # 2. Train the model on row sequence
+    # Train the model
     model = LinearRegression()
-    model.fit(X_indices, Y_magnitudes)
+    model.fit(X_train, Y_train)
     
-    # 3. GENERATE FORECAST WINDOW PAST THE FINAL ROW ENTRY
-    # We create a trajectory line that traces all historical rows and projects forward out to an imaginary 20 extra rows
+    # 3. GENERATE THE FUTURE STEPS
+    # Graph out all historical events and project cleanly out to 20 imaginary future events
     historical_count = len(ml_df)
     forecast_extension = 20
+    total_horizon_steps = historical_count + forecast_extension
     
-    total_steps = historical_count + forecast_extension
-    forecast_indices = np.arange(total_steps).reshape(-1, 1)
+    # Create an array representing [1, 2, 3 ... 80, 81 ... 100]
+    forecast_axis = np.arange(1, total_horizon_steps + 1).reshape(-1, 1)
     
-    # Generate predictive output values across the expanded index line
-    extended_predictions = model.predict(forecast_indices)
+    # Predict values for the entire line
+    predictions = model.predict(forecast_axis)
     
-    # To prevent Plotly from breaking the horizontal layout, we generate placeholder dates for the future entries
-    # by adding artificial time steps onto the latest known date
-    last_known_date = ml_df['Time'].max()
-    time_delta = ml_df['Time'].diff().mean()  # average spacing between current events
-    if pd.isna(time_delta):
-        time_delta = pd.Timedelta(hours=1) # fallback if delta is zero
-        
-    future_dates = [last_known_date + (i * time_delta) for i in range(1, forecast_extension + 1)]
-    extended_timeline_dates = list(ml_df['Time']) + future_dates
-
     # 4. PLOT VISUALIZATION CANVAS
     trend_fig = go.Figure()
     
-    # Historical Observed Points (Guaranteed to fill the screen since dates are naturally aligned)
+    # Historical Observed Points (X-axis is now the clean integer sequence)
     trend_fig.add_trace(go.Scatter(
-        x=ml_df['Time'], y=ml_df['Magnitude'],
-        mode='markers+lines', name='Observed Magnitude Vectors',
-        line=dict(color='#00ffcc', width=1), marker=dict(size=6)
+        x=ml_df["Event Number"], 
+        y=ml_df['Magnitude'],
+        mode='markers+lines', 
+        name='Observed Magnitude Vectors',
+        hovertext=ml_df['Location'] + "<br>" + ml_df['Time'].dt.strftime('%Y-%m-%d %H:%M'),
+        line=dict(color='#00ffcc', width=1), 
+        marker=dict(size=6)
     ))
     
-    # Extended Red Predictive Trendline (Stretches smoothly through history and past the edge)
+    # Extended Red Predictive Trendline (Cuts right through history and pushes into the future horizon)
     trend_fig.add_trace(go.Scatter(
-        x=extended_timeline_dates, y=extended_predictions.flatten(),
-        mode='lines', name='Predictive Forecasting Trendline',
+        x=forecast_axis.flatten(), 
+        y=predictions.flatten(),
+        mode='lines', 
+        name='Predictive Forecasting Trendline',
         line=dict(color='#ff0055', width=2, dash='dash')
     ))
     
     trend_fig.update_layout(
-        template="plotly_dark", height=400, margin=dict(l=40, r=40, b=20, t=20),
+        template="plotly_dark", 
+        height=400, 
+        margin=dict(l=40, r=40, b=20, t=20),
         legend=dict(orientation="h", yanchor="bottom", y=1.02, xanchor="right", x=1),
-        xaxis=dict(title="Timeline Sequence (Historical Feed into Forecast Margin)"),
+        xaxis=dict(
+            title="Chronological Event Sequence (Historical Tracking ➡️ Future Forecast Window)",
+            dtick=10  # Put a marker every 10 events to keep it scannable
+        ),
         yaxis=dict(title="Magnitude")
     )
     st.plotly_chart(trend_fig, use_container_width=True)
@@ -111,7 +115,7 @@ if not ml_df.empty:
     st.subheader("Model Input Matrix", help="[Mechanism #5]: This is the clean structural tabular vector dataset feeding directly into the Scikit-Learn training layer.")
     st.caption("📋 **[Mechanism #5]: Model Training Inputs (Chronological Order)**")
     st.dataframe(
-        ml_df[["Time", "Location", "Magnitude"]],
+        ml_df[["Event Number", "Time", "Location", "Magnitude"]],
         use_container_width=True,
         height=300
     )
@@ -129,19 +133,19 @@ with edu_tabs[0]:
 
     #### 1. The Core Objective: Trend Extrapolation
     The system asks a fundamental predictive question: *Based on the chronological timeline of recent seismic events, what is the mathematical trajectory of upcoming events?*
-    To answer this, the system trains on your historical table data, maps the calculated slope, and then extends that slope line forward beyond your latest data parameters into empty future time coordinates without compromising chart aspect ratios.
+    To completely eliminate layout distortions and date-parsing crashes, the canvas maps data against sequential **Event Numbers ($1, 2, 3...$)** rather than volatile datetime intervals. 
 
     #### 2. The Step-by-Step Data Pipeline
-    * **Feature Engineering:** Machine learning models cannot parse human date formats. The script transforms the chronological index positions into a continuous integer **Feature Matrix ($X$)**, while **Magnitude** serves as our **Target Vector ($Y$)**. This removes erratic scaling bugs entirely.
+    * **Feature Engineering:** The script maps time strictly to an ordered ordinal sequence integer **Feature Matrix ($X$)**, while **Magnitude** serves as our **Target Vector ($Y$)**. 
     * **Model Instantiation:** The application initializes a blank mathematical container using Python's `scikit-learn` ecosystem: `model = LinearRegression()`.
     * **Model Training (`.fit()`):** When executing `model.fit(X, Y)`, the algorithm parses every single row inside the data table below, adjusting a linear trajectory until it minimizes the squared distances between the trendline and every historical scatter point.
-    * **Statistical Forecasting Horizon (`.predict()`):** The trained model leverages its mathematical formula in memory ($Y = \\beta_0 + \\beta_1X$). The code generates an expanded array index stretching past your historical metrics, calculates predictions for those future spaces, and plots them as the dashed **red Trendline** breaking out past your last data point.
+    * **Statistical Forecasting Horizon (`.predict()`):** The trained model leverages its mathematical formula in memory ($Y = \\beta_0 + \\beta_1X$). The code generates an expanded array matrix stretching past your historical metrics (e.g., out to Event 100), calculates predictions for those future spaces, and plots them as the dashed **red Trendline** breaking out past your last data point.
     """)
 
 with edu_tabs[1]:
     st.markdown("""
     ### [Mechanism #5] Advanced Machine Learning Analytics & Predictive Trajectories
-    * **The Feature:** A chronological data grid cross-referenced against an extrapolated mathematical forecasting projection line.
-    * **The Extrapolation:** Positioned inside the mathematical canvas, the dashed **red trajectory vector** leverages calculated historical slopes to compute future estimations, plotting data projections safely past the newest row entry.
-    * **The Mechanism:** Scikit-Learn structures cannot parse complex timestamp dates natively. The data pipeline indexes the tabular entries into clean sequence numbers ($X$ integer array). An ordinary least squares linear regression model is compiled ($Y = \\beta_0 + \\beta_1X + \\epsilon$) to construct continuous trend metrics, which are evaluated over an expanded future sequence array and rendered on-screen.
+    * **The Feature:** A chronological data grid cross-referenced against an extrapolated mathematical forecasting serialization line.
+    * **The Extrapolation:** Positioned inside the mathematical canvas, the dashed **red trajectory vector** leverages calculated historical slopes to compute future estimations, plotting data projections safely past the newest index row entry.
+    * **The Mechanism:** Scikit-Learn structures cannot parse complex timestamp dates natively. The data pipeline indexes the tabular entries into clean sequence integers ($X$ vector array). An ordinary least squares linear regression model is compiled ($Y = \\beta_0 + \\beta_1X + \\epsilon$) to construct continuous trend metrics, which are evaluated over an expanded future sequence array and rendered on-screen.
     """)
