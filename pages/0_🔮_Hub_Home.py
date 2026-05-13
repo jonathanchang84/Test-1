@@ -1,14 +1,47 @@
 import streamlit as st
 
+# ==========================================
+# SIDEBAR NAVIGATION & EXPLICIT ROUTING ENGINE
+# ==========================================
+# Define the sidebar navigation labels, file paths, and icons explicitly
+home_page = st.Page(
+    "Hello.py", 
+    title="Home", 
+    icon="🏠", 
+    default=True
+)
+map_page = st.Page(
+    "pages/1_🗺️_Geospatial_Telemetry.py", 
+    title="Geospatial Telemetry", 
+    icon="🗺️"
+)
+model_page = st.Page(
+    "pages/2_🔮_Predictive_Modeling.py", 
+    title="Predictive Modeling", 
+    icon="🔮"
+)
+
+# Render the sidebar navigation using our custom-labeled page objects
+pg = st.navigation([home_page, map_page, model_page])
+
+# Global Page Layout Configuration
 st.set_page_config(
     page_title="Modular Analytics & Visualization Capabilities: A Technical Exercise",
     page_icon="🎨",
     layout="wide"
 )
 
-# Initialize global authentication state for the subpages to check
+# Initialize global authentication state for subpages to verify
 if "authenticated" not in st.session_state:
     st.session_state["authenticated"] = True
+
+# Execute the page routing engine to draw the contents below
+pg.run()
+
+
+# ==========================================
+# MAIN INTERFACE CAPABILITIES PORTFOLIO
+# ==========================================
 
 # Main Entry Title Block
 st.title("🎨 Modular Analytics & Visualization Capabilities: A Technical Exercise")
