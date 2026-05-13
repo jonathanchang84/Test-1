@@ -20,29 +20,46 @@ limit = st.sidebar.slider("Max Record Limit", 15, 150, 50, step=5, help="[Mechan
 
 def fetch_geospatial_telemetry(min_mag, max_rows):
     url = f"https://earthquake.usgs.gov/fdsnws/event/1/query?format=geojson&minmagnitude={min_mag}&limit={max_rows}"
-    try:
-        response = requests.get(url, timeout=10)
-        response.raise_for_status() 
-        raw_json = response.json()
-        features = raw_json.get("features", [])
-        
-        cleaned_records = []
-        for item in features:
-            props = item.get("properties", {})
-            geom = item.get("geometry", {})
-            coords = geom.get("coordinates", [0, 0, 0])
-            cleaned_records.append({
-                "Location": props.get("place", "Unknown Axis"),
-                "Magnitude": props.get("mag", 0.0),
-                "Time": pd.to_datetime(props.get("time", 0), unit='ms'),
-                "Longitude": coords[0],
-                "Latitude": coords[1],
-                "Depth (km)": coords[2]
-            })
-        return pd.DataFrame(cleaned_records)
-    except Exception as e:
-        st.error(f"🔴 Telemetry Fetch Fault: {e}")
-        return pd.DataFrame()
+    
+    # --- UPGRADED SELF-HEALING RETRY LOOP ---
+    max_retries = 3
+    timeout_seconds = 20  # Increased from 10 to give the government server more breathing room
+    
+    for attempt in range(max_retries):
+        try:
+            # Attempt the outbound network handshake
+            response = requests.get(url, timeout=timeout_seconds)
+            response.raise_for_status() 
+            raw_json = response.json()
+            features = raw_json.get("features", [])
+            
+            cleaned_records = []
+            for item in features:
+                props = item.get("properties", {})
+                geom = item.get("geometry", {})
+                coords = geom.get("coordinates", [0, 0, 0])
+                cleaned_records.append({
+                    "Location": props.get("place", "Unknown Axis"),
+                    "Magnitude": props.get("mag", 0.0),
+                    "Time": pd.to_datetime(props.get("time", 0), unit='ms'),
+                    "Longitude": coords[0],
+                    "Latitude": coords[1],
+                    "Depth (km)": coords[2]
+                })
+            return pd.DataFrame(cleaned_records)
+            
+        except requests.exceptions.Timeout:
+            # If a timeout occurs, wait a second and retry before crashing
+            if attempt < max_retries - 1:
+                time.sleep(1.5)
+                st.toast(f"⚠️ API Gateway timed out. Re-attempting connection ({attempt + 2}/{max_retries})...")
+            else:
+                st.error("🔴 Network Fault: The data provider is under heavy load and failed to respond after multiple attempts. Try raising the Minimum Magnitude slider to reduce dataset size.")
+                return pd.DataFrame()
+                
+        except Exception as e:
+            st.error(f"🔴 Telemetry Fetch Fault: {e}")
+            return pd.DataFrame()
 
 start_time = time.perf_counter()
 with st.spinner("Streaming remote payload..."):
