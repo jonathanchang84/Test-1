@@ -23,7 +23,7 @@ else:
     with col1:
         st.header("Welcome to the Master Telemetry Node", divider="blue")
         st.markdown("""
-        This platform represents an enterprise-grade web application architecture built entirely within Python. 
+        This platform represents a web application architecture built entirely within Python. 
         By utilizing decoupled processing layouts, the computational workloads are dynamically isolated across independent system nodes.
         
         #### Available Network Nodes:
