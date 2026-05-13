@@ -1,5 +1,9 @@
 import streamlit as st
+import requests
+import pandas as pd
+import plotly.express as px
 
+# 1. Page Configuration
 st.set_page_config(
     page_title="Quantum Analytics Hub",
     page_icon="🔮",
@@ -7,49 +11,72 @@ st.set_page_config(
     initial_sidebar_state="expanded"
 )
 
-if "authenticated" not in st.session_state:
-    st.session_state.authenticated = False
-
+# 2. Page Header
 st.title("🔮 Quantum Analytics Hub")
 st.markdown("---")
 
-if not st.session_state.authenticated:
-    st.subheader("Secure Gateway")
-    st.info("💡 **System Note:** The application is currently state-locked. Click below to trigger a global session state change.")
-    if st.button("Initialize Session", type="primary"):
-        st.session_state.authenticated = True
-        st.rerun()
-else:
-    st.sidebar.success("Session Active")
-    if st.sidebar.button("Terminate Session"):
-        st.session_state.authenticated = False
-        st.rerun()
+# 3. Sidebar Filters for the API
+st.sidebar.header("Global API Filter Matrix")
+min_magnitude = st.sidebar.slider("Minimum Magnitude", 1.0, 7.0, 4.5, step=0.5)
+limit = st.sidebar.slider("Max Record Limit", 10, 200, 50, step=10)
+
+# 4. API Ingestion Engine
+def fetch_geospatial_telemetry(min_mag, max_rows):
+    url = f"https://earthquake.usgs.gov/fdsnws/event/1/query?format=geojson&minmagnitude={min_mag}&limit={max_rows}"
+    try:
+        response = requests.get(url, timeout=10)
+        response.raise_for_status() 
+        raw_json = response.json()
+        features = raw_json.get("features", [])
         
-    col1, col2 = st.columns(2)
+        cleaned_records = []
+        for item in features:
+            props = item.get("properties", {})
+            geom = item.get("geometry", {})
+            coords = geom.get("coordinates", [0, 0, 0])
+            
+            cleaned_records.append({
+                "Location": props.get("place", "Unknown Axis"),
+                "Magnitude": props.get("mag", 0.0),
+                "Time": pd.to_datetime(props.get("time", 0), unit='ms'),
+                "Longitude": coords[0],
+                "Latitude": coords[1],
+                "Depth (km)": coords[2]
+            })
+        return pd.DataFrame(cleaned_records)
+    except Exception as e:
+        st.error(f"🔴 Telemetry Fetch Fault: {e}")
+        return pd.DataFrame()
+
+# Execute Fetch on Homepage
+with st.spinner("Connecting to global telemetry stream..."):
+    telemetry_df = fetch_geospatial_telemetry(min_magnitude, limit)
+
+# 5. Render Layout on Homepage
+if not telemetry_df.empty:
+    col1, col2 = st.columns([1, 2])
     
     with col1:
-        st.header("Welcome to the Edge of Data Science")
-        st.write("""
-            This application demonstrates complex architectural patterns in Streamlit:
-            * **State Preservation:** Keeps track of your auth state across page navigation.
-            * **Multi-Page Routing:** Dynamically handles disparate data workloads.
-            * **Reactive Computations:** Updates elements only when inputs strictly change.
-        """)
+        st.header("System Metrics")
+        st.metric("Active Anomalies", len(telemetry_df))
+        st.metric("Peak Severity (Mag)", f"{telemetry_df['Magnitude'].max():.1f}")
+        st.metric("Mean Crustal Depth", f"{telemetry_df['Depth (km)'].mean():.2f} km")
+        st.dataframe(telemetry_df[["Location", "Magnitude"]].head(5), use_container_width=True)
     
     with col2:
-        st.center = st.status("System Status", expanded=True)
-        st.center.write("🔄 Caching Engines: Operational")
-        st.center.write("📡 Async Data Pipelines: Ready")
-        st.center.write("🔐 Session Token: Verified")
+        st.header("Live Geospatial Topology")
+        fig = px.scatter_mapbox(
+            telemetry_df, lat="Latitude", lon="Longitude", size="Magnitude", color="Depth (km)",
+            color_continuous_scale="Viridis", hover_name="Location", zoom=1, height=400
+        )
+        fig.update_layout(mapbox_style="open-street-map", margin=dict(l=0, r=0, b=0, t=0))
+        st.plotly_chart(fig, use_container_width=True)
 
-    # --- NEW COMMENTARY SECTION ---
-    st.markdown("---")
-    with st.expander("🛠️ Architectural Blueprint: How this page works", expanded=True):
-        st.markdown("""
-        ### Core Concept: Global Session State Management
-        Standard web applications require heavy backend frameworks (like Flask or Django) paired with cookies to remember who you are. 
-        Streamlit handles this natively via `st.session_state`, acting as an in-memory key-value store tied to this specific browser tab session.
-        
-        * **The Logic:** When you clicked *Initialize Session*, we set `st.session_state.authenticated = True` and forced a `st.rerun()`.
-        * **The Impact:** Every sub-page inside the `pages/` directory constantly checks this boolean. If a user tries to bookmark or bypass straight to the Analytics page without authenticating here, the system intercepts them and calls `st.stop()`, killing the execution thread instantly.
-        """)
+# 6. Architectural Commentary at the bottom
+st.markdown("---")
+with st.expander("🛠️ Home Node Blueprint: Real-Time Data Ingestion"):
+    st.markdown("""
+    ### What is happening here?
+    This main landing page (`app.py`) is now initiating a live HTTP REST API handshake directly with the USGS seismic databases upon every browser refresh. 
+    It streams raw JSON packets over the internet, flattens the nested structures into tables using Pandas, and renders a live geographic map layout directly onto your home screen.
+    """)
