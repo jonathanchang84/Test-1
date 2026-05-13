@@ -109,10 +109,10 @@ with edu_tabs[0]:
     st.latex(r"Y = \beta_0 + \beta_1X")
     
     st.markdown("""
-    The script passes the time array back through this solved formula, calculating the precise coordinates needed to draw the pink dashed **Trendline** overlaid on your canvas.
+    The script passes the time array back through this solved formula, calculating the precise coordinates needed to draw the dashed **red Trendline** overlaid on your canvas.
 
     #### Why is this "Learning"?
-    The slope parameters ($\beta_1$) are never hardcoded. If you query data from a peaceful region, the AI dynamically "learns" a negative slope. If volatility spikes globally, the algorithm shifts its weights and computes a positive slope. The data table acts as the **Teacher**, the Scikit-Learn compiler is the **Student**, and the pink trendline is the **Solution**!
+    The slope parameters ($\beta_1$) are never hardcoded. If you query data from a peaceful region, the AI dynamically "learns" a negative slope. If volatility spikes globally, the algorithm shifts its weights and computes a positive slope. The data table acts as the **Teacher**, the Scikit-Learn compiler is the **Student**, and the dashed **red trendline** is the **Solution**!
     """)
 
 with edu_tabs[1]:
@@ -120,5 +120,5 @@ with edu_tabs[1]:
     ### [Mechanism #5] Advanced Machine Learning Analytics & Predictive Trajectories
     * **The Feature:** A chronological data grid cross-referenced against a synchronized mathematical trend projection line.
     * **The Data Matrix:** Positioned directly beneath the mathematical canvas, the full-width `st.dataframe()` displays the clean, sorted input parameters ($X$ and $Y$ training variables). This stacked layout permits high-density, horizontal scannability of structural features like extended text-based locations and timestamps.
-    * **The Mechanism:** Scikit-Learn structures cannot parse complex timestamp dates natively. The data pipeline transforms the calendar dates from our data table into raw numeric Unix epoch dimensions ($X$ float vector array). An ordinary least squares linear regression model is compiled ($Y = \\beta_0 + \\beta_1X + \\epsilon$) to construct continuous trend metrics, which are overlaid onto the data canvas.
+    * **The Mechanism:** Scikit-Learn structures cannot parse complex timestamp dates natively. The data pipeline transforms the calendar dates from our data table into raw numeric Unix epoch dimensions ($X$ float vector array). An ordinary least squares linear regression model is compiled ($Y = \\beta_0 + \\beta_1X + \\epsilon$) to construct continuous trend metrics, which are overlaid onto the data canvas as a dashed **red trajectory vector**.
     """)
