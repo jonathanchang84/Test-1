@@ -16,7 +16,6 @@ st.markdown("---")
 
 # Pull baseline reference data from the API
 def fetch_ml_data():
-    # Force the API itself to order events from oldest to newest explicitly via the query string
     url = "https://earthquake.usgs.gov/fdsnws/event/1/query?format=geojson&minmagnitude=3.0&limit=80&orderby=time-asc"
     try:
         response = requests.get(url, timeout=10)
@@ -39,6 +38,9 @@ with st.spinner("Processing time-series vectors..."):
 
 if not ml_df.empty:
     
+    # Force chronological alignment and reset indices to sequential integers (0, 1, 2...)
+    ml_df = ml_df.sort_values(by="Time").reset_index(drop=True)
+    
     # --- UPPER ROW: SUMMARY METRICS & CHRONOLOGICAL CHART ---
     metric_col1, metric_col2, _ = st.columns([1, 1, 2])
     with metric_col1:
@@ -48,44 +50,49 @@ if not ml_df.empty:
         
     st.subheader("Linear Regression Model Trajectory Mapping", help="[Mechanism #5]: Fits trendlines straight over dynamic series arrays.")
     
-    # 1. Convert historical Timestamps into numeric Unix float values (in seconds) for training
-    X_timestamps = (ml_df['Time'].astype(np.int64) // 10**9).values.reshape(-1, 1)
+    # 1. FEATURES AND TARGETS: Use sequential index integers instead of raw timestamp numbers
+    # This guarantees no weird scaling loops or hidden millisecond cluster bugs.
+    X_indices = ml_df.index.values.reshape(-1, 1)
     Y_magnitudes = ml_df['Magnitude'].values.reshape(-1, 1)
     
-    # 2. Train the model on chronological historical data
+    # 2. Train the model on row sequence
     model = LinearRegression()
-    model.fit(X_timestamps, Y_magnitudes)
+    model.fit(X_indices, Y_magnitudes)
     
-    # 3. GENERATE SMART FUTURE FORECAST HORIZON
-    # We extend out by 20% of the dataset's total spanned timeframe to show a preview without squishing data
-    min_time_unix = X_timestamps.min()
-    max_time_unix = X_timestamps.max()
-    timespan_seconds = max_time_unix - min_time_unix
-    future_buffer = timespan_seconds * 0.20 
-    future_time_unix = max_time_unix + future_buffer
+    # 3. GENERATE FORECAST WINDOW PAST THE FINAL ROW ENTRY
+    # We create a trajectory line that traces all historical rows and projects forward out to an imaginary 20 extra rows
+    historical_count = len(ml_df)
+    forecast_extension = 20
     
-    # Generate a smooth timeline array from start to future limit
-    forecast_timeline_unix = np.linspace(min_time_unix, future_time_unix, 100).reshape(-1, 1)
+    total_steps = historical_count + forecast_extension
+    forecast_indices = np.arange(total_steps).reshape(-1, 1)
     
-    # Explicitly convert seconds back to pandas timestamps using unit='s' to prevent year 2240 bugs
-    forecast_timeline_dt = pd.to_datetime(forecast_timeline_unix.flatten(), unit='s')
+    # Generate predictive output values across the expanded index line
+    extended_predictions = model.predict(forecast_indices)
     
-    # Generate predictive values across the timeline
-    extended_predictions = model.predict(forecast_timeline_unix)
-    
+    # To prevent Plotly from breaking the horizontal layout, we generate placeholder dates for the future entries
+    # by adding artificial time steps onto the latest known date
+    last_known_date = ml_df['Time'].max()
+    time_delta = ml_df['Time'].diff().mean()  # average spacing between current events
+    if pd.isna(time_delta):
+        time_delta = pd.Timedelta(hours=1) # fallback if delta is zero
+        
+    future_dates = [last_known_date + (i * time_delta) for i in range(1, forecast_extension + 1)]
+    extended_timeline_dates = list(ml_df['Time']) + future_dates
+
     # 4. PLOT VISUALIZATION CANVAS
     trend_fig = go.Figure()
     
-    # Historical Observed Points (Scatter markers + thin connection lines)
+    # Historical Observed Points (Guaranteed to fill the screen since dates are naturally aligned)
     trend_fig.add_trace(go.Scatter(
         x=ml_df['Time'], y=ml_df['Magnitude'],
         mode='markers+lines', name='Observed Magnitude Vectors',
         line=dict(color='#00ffcc', width=1), marker=dict(size=6)
     ))
     
-    # Extended Red Predictive Trendline (Stretches cleanly through history and into the forecast margin)
+    # Extended Red Predictive Trendline (Stretches smoothly through history and past the edge)
     trend_fig.add_trace(go.Scatter(
-        x=forecast_timeline_dt, y=extended_predictions.flatten(),
+        x=extended_timeline_dates, y=extended_predictions.flatten(),
         mode='lines', name='Predictive Forecasting Trendline',
         line=dict(color='#ff0055', width=2, dash='dash')
     ))
@@ -93,10 +100,7 @@ if not ml_df.empty:
     trend_fig.update_layout(
         template="plotly_dark", height=400, margin=dict(l=40, r=40, b=20, t=20),
         legend=dict(orientation="h", yanchor="bottom", y=1.02, xanchor="right", x=1),
-        xaxis=dict(
-            title="Timeline (Chronological Feed)",
-            range=[ml_df['Time'].min(), forecast_timeline_dt.max()]
-        ),
+        xaxis=dict(title="Timeline Sequence (Historical Feed into Forecast Margin)"),
         yaxis=dict(title="Magnitude")
     )
     st.plotly_chart(trend_fig, use_container_width=True)
@@ -128,10 +132,10 @@ with edu_tabs[0]:
     To answer this, the system trains on your historical table data, maps the calculated slope, and then extends that slope line forward beyond your latest data parameters into empty future time coordinates without compromising chart aspect ratios.
 
     #### 2. The Step-by-Step Data Pipeline
-    * **Feature Engineering:** Machine learning models cannot parse human date formats. The script transforms the **Time** column into raw Unix Epoch floats (total seconds elapsed since 1970). This yields our computational **Feature Matrix ($X$)**, while **Magnitude** serves as our **Target Vector ($Y$)**.
+    * **Feature Engineering:** Machine learning models cannot parse human date formats. The script transforms the chronological index positions into a continuous integer **Feature Matrix ($X$)**, while **Magnitude** serves as our **Target Vector ($Y$)**. This removes erratic scaling bugs entirely.
     * **Model Instantiation:** The application initializes a blank mathematical container using Python's `scikit-learn` ecosystem: `model = LinearRegression()`.
     * **Model Training (`.fit()`):** When executing `model.fit(X, Y)`, the algorithm parses every single row inside the data table below, adjusting a linear trajectory until it minimizes the squared distances between the trendline and every historical scatter point.
-    * **Statistical Forecasting Horizon (`.predict()`):** The trained model leverages its mathematical formula in memory ($Y = \\beta_0 + \\beta_1X$). The code generates a brand new array of timestamps stretching slightly into the future, calculates predictions for those unmapped dates, and plots them as the dashed **red Trendline** breaking out past your last data point.
+    * **Statistical Forecasting Horizon (`.predict()`):** The trained model leverages its mathematical formula in memory ($Y = \\beta_0 + \\beta_1X$). The code generates an expanded array index stretching past your historical metrics, calculates predictions for those future spaces, and plots them as the dashed **red Trendline** breaking out past your last data point.
     """)
 
 with edu_tabs[1]:
@@ -139,5 +143,5 @@ with edu_tabs[1]:
     ### [Mechanism #5] Advanced Machine Learning Analytics & Predictive Trajectories
     * **The Feature:** A chronological data grid cross-referenced against an extrapolated mathematical forecasting projection line.
     * **The Extrapolation:** Positioned inside the mathematical canvas, the dashed **red trajectory vector** leverages calculated historical slopes to compute future estimations, plotting data projections safely past the newest row entry.
-    * **The Mechanism:** Scikit-Learn structures cannot parse complex timestamp dates natively. The data pipeline transforms the calendar dates from our data table into raw numeric Unix epoch dimensions ($X$ float vector array). An ordinary least squares linear regression model is compiled ($Y = \\beta_0 + \\beta_1X + \\epsilon$) to construct continuous trend metrics, which are evaluated over an expanded future-date array and rendered on-screen.
+    * **The Mechanism:** Scikit-Learn structures cannot parse complex timestamp dates natively. The data pipeline indexes the tabular entries into clean sequence numbers ($X$ integer array). An ordinary least squares linear regression model is compiled ($Y = \\beta_0 + \\beta_1X + \\epsilon$) to construct continuous trend metrics, which are evaluated over an expanded future sequence array and rendered on-screen.
     """)
