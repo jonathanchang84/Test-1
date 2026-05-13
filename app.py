@@ -176,7 +176,7 @@ else:
 
         # --- MACHINE LEARNING FORECASTING (Mechanism #5) ---
         st.markdown("---")
-        st.header("🔮 [Mechanism #5]: Predictive Algorithmic Forecasting Model", help="[Mechanism #5]: Fits ordinary least squares regression lines directly over time-series vectors.")
+        st.header("🔮 Predictive Algorithmic Forecasting Model", help="[Mechanism #5]: Fits ordinary least squares regression lines directly over time-series vectors.")
         
         X_timestamps = np.array(telemetry_df['Time'].astype(np.int64) // 10**9).reshape(-1, 1)
         Y_magnitudes = telemetry_df['Magnitude'].values.reshape(-1, 1)
