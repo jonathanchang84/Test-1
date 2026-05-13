@@ -16,7 +16,8 @@ st.markdown("---")
 
 # Pull baseline reference data from the API
 def fetch_ml_data():
-    url = "https://earthquake.usgs.gov/fdsnws/event/1/query?format=geojson&minmagnitude=3.0&limit=80"
+    # Force the API itself to order events from oldest to newest explicitly via the query string
+    url = "https://earthquake.usgs.gov/fdsnws/event/1/query?format=geojson&minmagnitude=3.0&limit=80&orderby=time-asc"
     try:
         response = requests.get(url, timeout=10)
         raw_json = response.json()
@@ -29,7 +30,7 @@ def fetch_ml_data():
                 "Magnitude": props.get("mag", 0.0),
                 "Time": pd.to_datetime(props.get("time", 0), unit='ms')
             })
-        return pd.DataFrame(cleaned).sort_values(by="Time").reset_index(drop=True)
+        return pd.DataFrame(cleaned)
     except:
         return pd.DataFrame()
 
@@ -47,56 +48,54 @@ if not ml_df.empty:
         
     st.subheader("Linear Regression Model Trajectory Mapping", help="[Mechanism #5]: Fits trendlines straight over dynamic series arrays.")
     
-    # 1. Convert historical Timestamps into numeric Unix float values for training
-    X_timestamps = np.array(ml_df['Time'].astype(np.int64) // 10**9).reshape(-1, 1)
+    # 1. Convert historical Timestamps into numeric Unix float values (in seconds) for training
+    X_timestamps = (ml_df['Time'].astype(np.int64) // 10**9).values.reshape(-1, 1)
     Y_magnitudes = ml_df['Magnitude'].values.reshape(-1, 1)
     
-    # 2. Train the model on historical data
+    # 2. Train the model on chronological historical data
     model = LinearRegression()
     model.fit(X_timestamps, Y_magnitudes)
     
     # 3. GENERATE SMART FUTURE FORECAST HORIZON
-    # Instead of a massive 30 days, let's look forward by 25% of the existing dataset's lifespan
-    # This keeps the default date range tight and visually readable!
+    # We extend out by 20% of the dataset's total spanned timeframe to show a preview without squishing data
     min_time_unix = X_timestamps.min()
     max_time_unix = X_timestamps.max()
-    dataset_lifespan = max_time_unix - min_time_unix
-    future_extension = dataset_lifespan * 0.25  # Reaches out a quarter of the timeframe into the future
-    future_time_unix = max_time_unix + future_extension
+    timespan_seconds = max_time_unix - min_time_unix
+    future_buffer = timespan_seconds * 0.20 
+    future_time_unix = max_time_unix + future_buffer
     
-    # Create a balanced timeline array spanning from historical start to the short future window
+    # Generate a smooth timeline array from start to future limit
     forecast_timeline_unix = np.linspace(min_time_unix, future_time_unix, 100).reshape(-1, 1)
     
-    # Explicit conversion to nanoseconds to fix the missing Plotly line bug
-    forecast_timeline_dt = pd.to_datetime(forecast_timeline_unix.flatten() * 10**9)
+    # Explicitly convert seconds back to pandas timestamps using unit='s' to prevent year 2240 bugs
+    forecast_timeline_dt = pd.to_datetime(forecast_timeline_unix.flatten(), unit='s')
     
-    # Generate predictions across the entire expanded timeline
+    # Generate predictive values across the timeline
     extended_predictions = model.predict(forecast_timeline_unix)
     
     # 4. PLOT VISUALIZATION CANVAS
     trend_fig = go.Figure()
     
-    # Historical Observed Points
+    # Historical Observed Points (Scatter markers + thin connection lines)
     trend_fig.add_trace(go.Scatter(
         x=ml_df['Time'], y=ml_df['Magnitude'],
         mode='markers+lines', name='Observed Magnitude Vectors',
         line=dict(color='#00ffcc', width=1), marker=dict(size=6)
     ))
     
-    # Extended Red Predictive Trendline (Gracefully extends past the last point)
+    # Extended Red Predictive Trendline (Stretches cleanly through history and into the forecast margin)
     trend_fig.add_trace(go.Scatter(
         x=forecast_timeline_dt, y=extended_predictions.flatten(),
         mode='lines', name='Predictive Forecasting Trendline',
         line=dict(color='#ff0055', width=2, dash='dash')
     ))
     
-    # Fix the view bounds so it defaults to your historical range but shows the extension
     trend_fig.update_layout(
         template="plotly_dark", height=400, margin=dict(l=40, r=40, b=20, t=20),
         legend=dict(orientation="h", yanchor="bottom", y=1.02, xanchor="right", x=1),
         xaxis=dict(
-            title="Timeline",
-            range=[ml_df['Time'].min(), forecast_timeline_dt.max()]  # Dynamic frame clamping
+            title="Timeline (Chronological Feed)",
+            range=[ml_df['Time'].min(), forecast_timeline_dt.max()]
         ),
         yaxis=dict(title="Magnitude")
     )
