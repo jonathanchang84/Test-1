@@ -76,7 +76,7 @@ if not ml_df.empty:
     b_intercept = model.intercept_[0]
     equation_text = f"y = {m_slope:.4f}x + {b_intercept:.2f}"
 
-    # Visual Equation Display
+    # Visual Equation Display immediately above chart
     st.latex(equation_text)
     
     # --- FORECAST GENERATION ---
@@ -84,10 +84,9 @@ if not ml_df.empty:
     forecast_axis = np.arange(1, len(ml_df) + forecast_extension + 1).reshape(-1, 1)
     predictions = model.predict(forecast_axis)
     
-    # --- PLOT VISUALIZATION ---
+    # --- PLOT VISUALIZATION CANVAS ---
     trend_fig = go.Figure()
     
-    # Historical Observed Points
     trend_fig.add_trace(go.Scatter(
         x=ml_df["Event Number"], 
         y=ml_df['Magnitude'],
@@ -98,12 +97,11 @@ if not ml_df.empty:
         marker=dict(size=6)
     ))
     
-    # Extended Predictive Trendline
     trend_fig.add_trace(go.Scatter(
         x=forecast_axis.flatten(), 
         y=predictions.flatten(),
         mode='lines', 
-        name=f'Predictive Forecasting Trendline ({equation_text})',
+        name=f'Predictive Trendline ({equation_text})',
         line=dict(color='#ff0055', width=2, dash='dash')
     ))
     
@@ -117,7 +115,7 @@ if not ml_df.empty:
     st.plotly_chart(trend_fig, use_container_width=True)
 
     st.markdown("---")
-    st.subheader("Model Input Matrix", help="[Mechanism #5]: Clean structural tabular vector dataset feeding into Scikit-Learn.")
+    st.subheader("Model Input Matrix", help="[Mechanism #5]: Raw vector dataset feeding into Scikit-Learn.")
     st.dataframe(ml_df[["Time", "Location", "Magnitude"]], use_container_width=True, hide_index=True, height=300)
 
 # ==========================================
@@ -136,17 +134,18 @@ with edu_tabs[0]:
     To completely eliminate layout distortions and date-parsing crashes, the canvas maps data against sequential **Event Numbers ($1, 2, 3...$)** rather than volatile datetime intervals. 
 
     #### 2. The Current Mathematical Identity
-    Based on the ingested telemetry above, the model has resolved the following OLS equation:
+    The Ordinary Least Squares (OLS) algorithm has resolved the following linear equation for this live dataset:
+    
     **Equation:** ${equation_text}$
 
-    * **The Slope ($m$):** Calculated at **{m_slope:.4f}**, this represents the rate of magnitude change per sequence step.
-    * **The Intercept ($b$):** Calculated at **{b_intercept:.2f}**, representing the theoretical baseline value.
+    * **The Slope ($m$):** Calculated at **{m_slope:.4f}**. This value represents the 'velocity' of the trend. A positive value indicates a rising magnitude trajectory across the sequence, while a negative value suggests a dampening effect.
+    * **The Intercept ($b$):** Calculated at **{b_intercept:.2f}**. This is the theoretical value of $Y$ when the sequence index is at zero, providing the model's baseline anchor point.
 
     #### 3. The Step-by-Step Data Pipeline
     * **Feature Engineering:** The script maps time strictly to an ordered ordinal sequence integer **Feature Matrix ($X$)**, while **Magnitude** serves as our **Target Vector ($Y$)**. 
     * **Model Instantiation:** The application initializes a blank mathematical container using Python's `scikit-learn` ecosystem: `model = LinearRegression()`.
     * **Model Training (`.fit()`):** When executing `model.fit(X, Y)`, the algorithm parses every single row inside the data table below, adjusting a linear trajectory until it minimizes the squared distances between the trendline and every historical scatter point.
-    * **Statistical Forecasting Horizon (`.predict()`):** The trained model leverages its mathematical formula in memory ($Y = \\beta_0 + \\beta_1X$). The code generates an expanded array matrix stretching past your historical metrics (e.g., out to Event 100), calculates predictions for those future spaces, and plots them as the dashed **red Trendline** breaking out past your last data point.
+    * **Statistical Forecasting Horizon (`.predict()`):** The trained model leverages its mathematical formula in memory ($Y = \\beta_0 + \\beta_1X$). The code generates an expanded array matrix stretching past your historical metrics, calculates predictions for those future spaces, and plots them as the dashed **red Trendline** breaking out past your last data point.
     """)
 
 with edu_tabs[1]:
