@@ -14,17 +14,17 @@ if not st.session_state.get("authenticated", False):
 st.title("🔮 Predictive Algorithmic Forecasting Model")
 st.markdown("---")
 
-# Pull baseline reference data from the API with visible error reporting
+# Pull baseline reference data from the API
 def fetch_ml_data():
     url = "https://earthquake.usgs.gov/fdsnws/event/1/query?format=geojson&minmagnitude=3.0&limit=80&orderby=time-asc"
     try:
         response = requests.get(url, timeout=15)
-        response.raise_for_status() # Force an error if the server responds with a fault
+        response.raise_for_status()
         raw_json = response.json()
         features = raw_json.get("features", [])
         
         if not features:
-            st.warning("⚠️ API Connection successful, but the USGS database returned zero events for this query window.")
+            st.warning("⚠️ API Connection successful, but the USGS database returned zero events.")
             return pd.DataFrame()
             
         cleaned = []
@@ -36,114 +36,83 @@ def fetch_ml_data():
                 "Time": pd.to_datetime(props.get("time", 0), unit='ms')
             })
         return pd.DataFrame(cleaned)
-        
-    except requests.exceptions.Timeout:
-        st.error("🔴 API Network Fault: Connection timed out after 15 seconds. The USGS data cluster is currently overloaded.")
-        return pd.DataFrame()
-    except requests.exceptions.HTTPError as e:
-        st.error(f"🔴 API Protocol Fault: The server rejected our query request. Details: {e}")
-        return pd.DataFrame()
     except Exception as e:
-        st.error(f"🔴 Critical Script Intercept: Failed to unpack payload. Details: {e}")
+        st.error(f"🔴 Critical Script Intercept: {e}")
         return pd.DataFrame()
 
 with st.spinner("Processing time-series vectors..."):
     ml_df = fetch_ml_data()
 
 if not ml_df.empty:
-    
-    # 1. Clean data and force strict sequence indexing
     ml_df = ml_df.sort_values(by="Time").reset_index(drop=True)
     ml_df["Event Number"] = ml_df.index + 1
     
-    # --- CALCULATE ADVANCED STATISTICAL DESCRIPTORS ---
+    # --- STATISTICAL DESCRIPTORS ---
     sample_size = len(ml_df)
     mean_mag = ml_df['Magnitude'].mean()
     median_mag = ml_df['Magnitude'].median()
     std_mag = ml_df['Magnitude'].std()
     variance_mag = ml_df['Magnitude'].var()
     
-    # --- UPPER ROW: FIVE-COLUMN SUMMARY METRIC RIBBON ---
-    # Split the metric bar into 5 clean, distinct columns across the widescreen layout
     metric_col1, metric_col2, metric_col3, metric_col4, metric_col5 = st.columns(5)
-    
-    with metric_col1:
-        st.metric("Training Sample Size (N)", sample_size)
-    with metric_col2:
-        st.metric("Mean Magnitude (Average)", f"{mean_mag:.2f} Mag")
-    with metric_col3:
-        st.metric("Median Magnitude (Middle)", f"{median_mag:.2f} Mag")
-    with metric_col4:
-        st.metric("Standard Deviation (σ)", f"±{std_mag:.2f} Mag", help="Measures absolute data dispersion around the calculated mean baseline.")
-    with metric_col5:
-        st.metric("Statistical Variance (σ²)", f"{variance_mag:.4f}", help="The average of the squared deviations from the mean distribution score.")
+    with metric_col1: st.metric("Sample Size (N)", sample_size)
+    with metric_col2: st.metric("Mean Mag", f"{mean_mag:.2f}")
+    with metric_col3: st.metric("Median Mag", f"{median_mag:.2f}")
+    with metric_col4: st.metric("Std Dev (σ)", f"±{std_mag:.2f}")
+    with metric_col5: st.metric("Variance (σ²)", f"{variance_mag:.4f}")
         
-    st.subheader("Linear Regression Model Trajectory Mapping", help="[Mechanism #5]: Fits trendlines straight over dynamic series arrays.")
+    st.subheader("Linear Regression Model Trajectory Mapping")
     
-    # 2. MACHINE LEARNING ENGINE MATRICES
+    # --- MACHINE LEARNING ENGINE ---
     X_train = ml_df["Event Number"].values.reshape(-1, 1)
     Y_train = ml_df['Magnitude'].values.reshape(-1, 1)
     
-    # Train the model
     model = LinearRegression()
     model.fit(X_train, Y_train)
     
-    # 3. GENERATE THE FUTURE STEPS
-    historical_count = len(ml_df)
-    forecast_extension = 20
-    total_horizon_steps = historical_count + forecast_extension
+    # EXTRACTION OF EQUATION PARAMETERS
+    m_slope = model.coef_[0][0]
+    b_intercept = model.intercept_[0]
+    equation_text = f"y = {m_slope:.4f}x + {b_intercept:.2f}"
+
+    # DISPLAY EQUATION ABOVE CHART
+    st.latex(equation_text)
     
-    forecast_axis = np.arange(1, total_horizon_steps + 1).reshape(-1, 1)
+    # --- GENERATE FORECAST ---
+    forecast_extension = 20
+    forecast_axis = np.arange(1, len(ml_df) + forecast_extension + 1).reshape(-1, 1)
     predictions = model.predict(forecast_axis)
     
-    # 4. PLOT VISUALIZATION CANVAS
+    # --- PLOT VISUALIZATION ---
     trend_fig = go.Figure()
     
-    # Historical Observed Points
     trend_fig.add_trace(go.Scatter(
         x=ml_df["Event Number"], 
         y=ml_df['Magnitude'],
         mode='markers+lines', 
-        name='Observed Magnitude Vectors',
-        hovertext=ml_df['Location'] + "<br>" + ml_df['Time'].dt.strftime('%Y-%m-%d %H:%M'),
+        name='Observed Vectors',
         line=dict(color='#00ffcc', width=1), 
         marker=dict(size=6)
     ))
     
-    # Extended Red Predictive Trendline
     trend_fig.add_trace(go.Scatter(
         x=forecast_axis.flatten(), 
         y=predictions.flatten(),
         mode='lines', 
-        name='Predictive Forecasting Trendline',
+        name=f'Trendline ({equation_text})', # Equation added to Legend
         line=dict(color='#ff0055', width=2, dash='dash')
     ))
     
     trend_fig.update_layout(
-        template="plotly_dark", 
-        height=400, 
+        template="plotly_dark", height=400, 
         margin=dict(l=40, r=40, b=20, t=20),
-        legend=dict(orientation="h", yanchor="bottom", y=1.02, xanchor="right", x=1),
-        xaxis=dict(
-            title="Chronological Event Sequence (Historical Tracking ➡️ Future Forecast Window)",
-            dtick=10
-        ),
-        yaxis=dict(title="Magnitude")
+        legend=dict(orientation="h", yanchor="bottom", y=1.02, xanchor="right", x=1)
     )
     st.plotly_chart(trend_fig, use_container_width=True)
 
     st.markdown("---")
-
-    # --- LOWER ROW: FULL-WIDTH ROW ENTRY MATRIX ---
-    st.subheader("Model Input Matrix", help="[Mechanism #5]: This is the clean structural tabular vector dataset feeding directly into the Scikit-Learn training layer.")
-    st.caption("📋 **[Mechanism #5]: Model Training Inputs (Chronological Order)**")
-    
-    st.dataframe(
-        ml_df[["Time", "Location", "Magnitude"]],
-        use_container_width=True,
-        hide_index=True,
-        height=300
-    )
+    st.subheader("Model Input Matrix")
+    st.dataframe(ml_df[["Time", "Location", "Magnitude"]], use_container_width=True, hide_index=True, height=300)
 
 # ==========================================
 # EDUCATIONAL CORE & ENGINEERING DOCUMENTATION
@@ -152,25 +121,20 @@ st.markdown("---")
 edu_tabs = st.tabs(["📊 Linear Regression Mechanics Explained", "🛠️ System Engineering Blueprint"])
 
 with edu_tabs[0]:
-    st.subheader("Understanding the Trend Estimation Engine on this Page")
-    st.markdown("""
-    Because there are no deep neural networks or complex AI models visible on this workspace, the machine learning occurring here is purely mathematical, silent, and foundational. This node utilizes **Supervised Machine Learning**, specifically an optimization algorithm known as **Linear Regression**.
-
-    #### 1. The Core Objective: Trend Extrapolation
-    The system asks a fundamental predictive question: *Based on the chronological timeline of recent seismic events, what is the mathematical trajectory of upcoming events?*
-    To completely eliminate layout distortions and date-parsing crashes, the canvas maps data against sequential **Event Numbers ($1, 2, 3...$)** rather than volatile datetime intervals. 
-
-    #### 2. The Step-by-Step Data Pipeline
-    * **Feature Engineering:** The script maps time strictly to an ordered ordinal sequence integer **Feature Matrix ($X$)**, while **Magnitude** serves as our **Target Vector ($Y$)**. 
-    * **Model Instantiation:** The application initializes a blank mathematical container using Python's `scikit-learn` ecosystem: `model = LinearRegression()`.
-    * **Model Training (`.fit()`):** When executing `model.fit(X, Y)`, the algorithm parses every single row inside the data table below, adjusting a linear trajectory until it minimizes the squared distances between the trendline and every historical scatter point.
-    * **Statistical Forecasting Horizon (`.predict()`):** The trained model leverages its mathematical formula in memory ($Y = \\beta_0 + \\beta_1X$). The code generates an expanded array matrix stretching past your historical metrics (e.g., out to Event 100), calculates predictions for those future spaces, and plots them as the dashed **red Trendline** breaking out past your last data point.
+    st.subheader("Understanding the Trend Estimation Engine")
+    st.markdown(f"""
+    This node utilizes **Linear Regression** to find the line of best fit. 
+    The mathematical identity currently resolved for this dataset is:
+    
+    #### **Equation:** ${equation_text}$
+    
+    * **The Slope ($m$):** For every event that occurs, the magnitude is predicted to change by **{m_slope:.4f}**.
+    * **The Intercept ($b$):** The theoretical starting magnitude at index 0 is **{b_intercept:.2f}**.
     """)
 
 with edu_tabs[1]:
     st.markdown("""
-    ### [Mechanism #5] Advanced Machine Learning Analytics & Predictive Trajectories
+    ### [Mechanism #5] Advanced Machine Learning Analytics
     * **The Feature:** A chronological data grid cross-referenced against an extrapolated mathematical forecasting serialization line.
-    * **The Extrapolation:** Positioned inside the mathematical canvas, the dashed **red trajectory vector** leverages calculated historical slopes to compute future estimations, plotting data projections safely past the newest index row entry.
-    * **The Mechanism:** Scikit-Learn structures cannot parse complex timestamp dates natively. The data pipeline indexes the tabular entries into clean sequence integers ($X$ vector array). An ordinary least squares linear regression model is compiled ($Y = \\beta_0 + \\beta_1X + \\epsilon$) to construct continuous trend metrics, which are evaluated over an expanded future sequence array and rendered on-screen.
+    * **The Mechanism:** Compiled via Ordinary Least Squares ($Y = \\beta_0 + \\beta_1X + \\epsilon$) to construct continuous trend metrics.
     """)
